@@ -2535,6 +2535,14 @@ static int goodix_ts_probe(struct platform_device *pdev)
 		goto err_out;
 	}
 
+	ret = core_data->hw_ops->read_version(core_data, &core_data->fw_version);
+	if (ret) {
+		ts_err("not a goodix touch device, ret:%d", ret);
+		goodix_ts_power_off(core_data);
+		ret = -ENODEV;
+		goto err_out;
+	}
+
 	/* generic notifier callback */
 	core_data->ts_notifier.notifier_call = goodix_generic_noti_callback;
 	goodix_ts_register_notifier(&core_data->ts_notifier);

@@ -81,6 +81,8 @@ enum CORD_PROB_STA {
 	CORE_MODULE_REMOVED = -2,
 };
 
+extern int core_module_prob_sate;
+
 enum GOODIX_ERR_CODE {
 	GOODIX_EBUS      = (1<<0),
 	GOODIX_ECHECKSUM = (1<<1),

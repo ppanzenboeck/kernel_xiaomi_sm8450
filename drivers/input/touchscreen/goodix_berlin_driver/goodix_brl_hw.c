@@ -81,6 +81,9 @@ static int brl_dev_confirm(struct goodix_ts_core *cd)
 	u8 tx_buf[8] = {0};
 	u8 rx_buf[8] = {0};
 
+	if (cd->bus->ic_type != IC_TYPE_BERLIN_A)
+		return 0;
+
 	memset(tx_buf, DEV_CONFIRM_VAL, sizeof(tx_buf));
 	while (retry--) {
 		ret = hw_ops->write(cd, BOOTOPTION_ADDR,
@@ -99,10 +102,11 @@ static int brl_dev_confirm(struct goodix_ts_core *cd)
 	if (retry < 0) {
 		ret = -EINVAL;
 		ts_err("device confirm failed, rx_buf:%*ph", 8, rx_buf);
+		return ret;
 	}
 
 	ts_info("device connected");
-	return ret;
+	return 0;
 }
 
 static int brl_reset_after(struct goodix_ts_core *cd)
@@ -235,7 +239,7 @@ static int brl_power_on(struct goodix_ts_core *cd, bool on)
 		gpio_direction_output(cd->board_data.reset_gpio, 0);
 		usleep_range(15000, 15100);
 		gpio_direction_output(cd->board_data.reset_gpio, 1);
-		msleep(GOODIX_NORMAL_RESET_DELAY_MS);
+		usleep_range(4000, 4100);
 
 		ret = brl_dev_confirm(cd);
 		if (ret < 0)
@@ -244,6 +248,7 @@ static int brl_power_on(struct goodix_ts_core *cd, bool on)
 		if (ret < 0)
 			goto power_off;
 
+		msleep(GOODIX_NORMAL_RESET_DELAY_MS);
 		return 0;
 	}
 

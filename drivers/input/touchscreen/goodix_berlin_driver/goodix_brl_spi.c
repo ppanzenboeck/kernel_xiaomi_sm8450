@@ -249,8 +249,11 @@ static int goodix_spi_probe(struct spi_device *spi)
 	 * module will probe the touch deivce.
 	 */
 	ret = platform_device_register(goodix_pdev);
-	if (ret) {
-		ts_err("failed register goodix platform device, %d", ret);
+	if (ret || core_module_prob_sate != CORE_MODULE_PROB_SUCCESS) {
+		ts_err("failed to probe goodix platform device, %d", ret);
+		if (!ret)
+			platform_device_unregister(goodix_pdev);
+		ret = -ENODEV;
 		goto err_pdev;
 	}
 	ts_info("spi probe out");
