@@ -7126,25 +7126,8 @@ static int fts_probe(struct spi_device *client)
 	int retval;
 	int skip_5_1 = 0;
 	u16 bus_type;
-	int gpio_119;
-	uint32_t hw_project;
-	hw_project = get_hw_version_platform();
-
 	logError(1, "%s %s: driver spi ver: %s\n", tag, __func__,
 		 FTS_TS_DRV_VERSION);
-
-	/* diting (L12) has two touch variants, check for FTS */
-	if (hw_project == HARDWARE_PROJECT_L12) {
-		gpio_direction_input(L12_ID_DET);
-		gpio_119 = gpio_get_value(L12_ID_DET);
-		logError(1, "%s gpio_119 = %d\n", tag, gpio_119);
-		if (!gpio_119) {
-			logError(1, "%s TP is goodix\n", tag);
-			return -ENODEV;
-		} else {
-			logError(1, "%s TP is st 61y\n", tag);
-		}
-	}
 
 #ifdef I2C_INTERFACE
 	logError(1, "%s I2C interface... \n", tag);
@@ -7666,8 +7649,10 @@ ProbeErrorExit_7:
 ProbeErrorExit_6:
 #if defined(CONFIG_DRM)
 	cancel_delayed_work_sync(&info->panel_notifier_register_work);
-	if (active_panel && info->notifier_cookie)
+	if (info->notifier_cookie) {
 		panel_event_notifier_unregister(info->notifier_cookie);
+		info->notifier_cookie = NULL;
+	}
 #endif
 	input_unregister_device(info->input_dev);
 #ifdef CONFIG_FTS_POWERSUPPLY_CB
@@ -7680,6 +7665,7 @@ ProbeErrorExit_5_1:
 
 ProbeErrorExit_5:
 	destroy_workqueue(info->event_wq);
+	destroy_workqueue(info->irq_wq);
 	destroy_workqueue(info->fps_wq);
 
 ProbeErrorExit_4:
@@ -7697,6 +7683,14 @@ ProbeErrorExit_2:
 		devm_pinctrl_put(info->ts_pinctrl);
 
 ProbeErrorExit_1:
+#if defined(CONFIG_DRM)
+	cancel_delayed_work_sync(&info->panel_notifier_register_work);
+	if (info->notifier_cookie) {
+		panel_event_notifier_unregister(info->notifier_cookie);
+		info->notifier_cookie = NULL;
+	}
+#endif
+	fts_info = NULL;
 	kfree(info);
 
 ProbeErrorExit_0:
